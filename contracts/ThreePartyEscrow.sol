@@ -50,6 +50,8 @@ contract ThreePartyEscrow {
         require(_seller != address(0), "Seller address cannot be zero");
         require(_mediator != address(0), "Mediator address cannot be zero");
         require(_seller != _mediator, "Seller and mediator must be different");
+        require(msg.sender != _seller, "Buyer and seller must be different");
+        require(msg.sender != _mediator, "Buyer and mediator must be different");
         
         buyer = msg.sender;
         seller = _seller;

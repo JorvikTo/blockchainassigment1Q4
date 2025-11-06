@@ -1,7 +1,7 @@
 {
-  "name": "blockchainassigment1q4",
+  "name": "blockchainassignment1q4",
   "version": "1.0.0",
-  "description": "blockchainassigment1Q4",
+  "description": "Three-Party Escrow Smart Contract - Blockchain Assignment 1 Q4",
   "main": "index.js",
   "scripts": {
     "test": "hardhat test",

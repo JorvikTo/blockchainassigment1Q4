@@ -45,6 +45,20 @@ describe("ThreePartyEscrow", function () {
         ThreePartyEscrow.connect(buyer).deploy(seller.address, seller.address)
       ).to.be.revertedWith("Seller and mediator must be different");
     });
+
+    it("Should reject buyer being same as seller", async function () {
+      const ThreePartyEscrow = await ethers.getContractFactory("ThreePartyEscrow");
+      await expect(
+        ThreePartyEscrow.connect(buyer).deploy(buyer.address, mediator.address)
+      ).to.be.revertedWith("Buyer and seller must be different");
+    });
+
+    it("Should reject buyer being same as mediator", async function () {
+      const ThreePartyEscrow = await ethers.getContractFactory("ThreePartyEscrow");
+      await expect(
+        ThreePartyEscrow.connect(buyer).deploy(seller.address, buyer.address)
+      ).to.be.revertedWith("Buyer and mediator must be different");
+    });
   });
 
   describe("Deposit", function () {
@@ -210,7 +224,7 @@ describe("ThreePartyEscrow", function () {
       
       const tx = await escrow.connect(buyer).approveRefund();
       const receipt = await tx.wait();
-      const gasUsed = receipt.gasUsed * receipt.gasPrice;
+      const gasUsed = receipt.gasUsed * (receipt.effectiveGasPrice || receipt.gasPrice);
       
       expect(await escrow.fundsRefunded()).to.be.true;
       expect(await escrow.amount()).to.equal(0);
@@ -227,7 +241,7 @@ describe("ThreePartyEscrow", function () {
       
       const tx = await escrow.connect(buyer).approveRefund();
       const receipt = await tx.wait();
-      const gasUsed = receipt.gasUsed * receipt.gasPrice;
+      const gasUsed = receipt.gasUsed * (receipt.effectiveGasPrice || receipt.gasPrice);
       
       expect(await escrow.fundsRefunded()).to.be.true;
       expect(await escrow.amount()).to.equal(0);
