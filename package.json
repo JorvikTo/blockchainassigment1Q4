@@ -5,7 +5,8 @@
   "main": "index.js",
   "scripts": {
     "test": "hardhat test",
-    "compile": "node scripts/compile.js"
+    "compile": "node scripts/compile.js",
+    "verify": "node scripts/verify.js"
   },
   "keywords": [],
   "author": "",
