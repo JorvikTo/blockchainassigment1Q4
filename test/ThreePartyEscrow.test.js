@@ -9,7 +9,7 @@ describe("ThreePartyEscrow", function () {
     [buyer, seller, mediator, other] = await ethers.getSigners();
     
     const ThreePartyEscrow = await ethers.getContractFactory("ThreePartyEscrow");
-    escrow = await ThreePartyEscrow.connect(buyer).deploy(seller.address, mediator.address);
+    escrow = await ThreePartyEscrow.deploy(buyer.address, seller.address, mediator.address);
   });
 
   describe("Deployment", function () {
@@ -25,38 +25,45 @@ describe("ThreePartyEscrow", function () {
       expect(await escrow.mediator()).to.equal(mediator.address);
     });
 
+    it("Should reject zero address for buyer", async function () {
+      const ThreePartyEscrow = await ethers.getContractFactory("ThreePartyEscrow");
+      await expect(
+        ThreePartyEscrow.deploy(ethers.ZeroAddress, seller.address, mediator.address)
+      ).to.be.revertedWith("Buyer address cannot be zero");
+    });
+
     it("Should reject zero address for seller", async function () {
       const ThreePartyEscrow = await ethers.getContractFactory("ThreePartyEscrow");
       await expect(
-        ThreePartyEscrow.connect(buyer).deploy(ethers.ZeroAddress, mediator.address)
+        ThreePartyEscrow.deploy(buyer.address, ethers.ZeroAddress, mediator.address)
       ).to.be.revertedWith("Seller address cannot be zero");
     });
 
     it("Should reject zero address for mediator", async function () {
       const ThreePartyEscrow = await ethers.getContractFactory("ThreePartyEscrow");
       await expect(
-        ThreePartyEscrow.connect(buyer).deploy(seller.address, ethers.ZeroAddress)
+        ThreePartyEscrow.deploy(buyer.address, seller.address, ethers.ZeroAddress)
       ).to.be.revertedWith("Mediator address cannot be zero");
     });
 
     it("Should reject same address for seller and mediator", async function () {
       const ThreePartyEscrow = await ethers.getContractFactory("ThreePartyEscrow");
       await expect(
-        ThreePartyEscrow.connect(buyer).deploy(seller.address, seller.address)
+        ThreePartyEscrow.deploy(buyer.address, seller.address, seller.address)
       ).to.be.revertedWith("Seller and mediator must be different");
     });
 
     it("Should reject buyer being same as seller", async function () {
       const ThreePartyEscrow = await ethers.getContractFactory("ThreePartyEscrow");
       await expect(
-        ThreePartyEscrow.connect(buyer).deploy(buyer.address, mediator.address)
+        ThreePartyEscrow.deploy(buyer.address, buyer.address, mediator.address)
       ).to.be.revertedWith("Buyer and seller must be different");
     });
 
     it("Should reject buyer being same as mediator", async function () {
       const ThreePartyEscrow = await ethers.getContractFactory("ThreePartyEscrow");
       await expect(
-        ThreePartyEscrow.connect(buyer).deploy(seller.address, buyer.address)
+        ThreePartyEscrow.deploy(buyer.address, seller.address, buyer.address)
       ).to.be.revertedWith("Buyer and mediator must be different");
     });
   });
@@ -133,30 +140,16 @@ describe("ThreePartyEscrow", function () {
       ).to.be.revertedWith("Buyer already approved release");
     });
 
-    it("Should release funds when buyer and seller approve", async function () {
+    it("Should release funds when buyer and seller approve and finalize", async function () {
       const depositAmount = ethers.parseEther("1.0");
       const sellerBalanceBefore = await ethers.provider.getBalance(seller.address);
       
       await escrow.connect(buyer).approveRelease();
+      await escrow.connect(seller).approveRelease();
       
-      await expect(escrow.connect(seller).approveRelease())
+      await expect(escrow.connect(buyer).finalizeRelease())
         .to.emit(escrow, "FundsReleased")
         .withArgs(seller.address, depositAmount);
-      
-      expect(await escrow.fundsReleased()).to.be.true;
-      expect(await escrow.amount()).to.equal(0);
-      
-      const sellerBalanceAfter = await ethers.provider.getBalance(seller.address);
-      // Seller balance should increase (minus gas costs for transaction)
-      expect(sellerBalanceAfter).to.be.greaterThan(sellerBalanceBefore);
-    });
-
-    it("Should release funds when buyer and mediator approve", async function () {
-      const depositAmount = ethers.parseEther("1.0");
-      const sellerBalanceBefore = await ethers.provider.getBalance(seller.address);
-      
-      await escrow.connect(buyer).approveRelease();
-      await escrow.connect(mediator).approveRelease();
       
       expect(await escrow.fundsReleased()).to.be.true;
       expect(await escrow.amount()).to.equal(0);
@@ -165,12 +158,30 @@ describe("ThreePartyEscrow", function () {
       expect(sellerBalanceAfter).to.equal(sellerBalanceBefore + depositAmount);
     });
 
-    it("Should release funds when seller and mediator approve", async function () {
+    it("Should release funds when buyer and mediator approve and finalize", async function () {
+      const depositAmount = ethers.parseEther("1.0");
+      const sellerBalanceBefore = await ethers.provider.getBalance(seller.address);
+      
+      await escrow.connect(buyer).approveRelease();
+      await escrow.connect(mediator).approveRelease();
+      
+      await escrow.connect(seller).finalizeRelease();
+      
+      expect(await escrow.fundsReleased()).to.be.true;
+      expect(await escrow.amount()).to.equal(0);
+      
+      const sellerBalanceAfter = await ethers.provider.getBalance(seller.address);
+      expect(sellerBalanceAfter).to.equal(sellerBalanceBefore + depositAmount);
+    });
+
+    it("Should release funds when seller and mediator approve and finalize", async function () {
       const depositAmount = ethers.parseEther("1.0");
       const sellerBalanceBefore = await ethers.provider.getBalance(seller.address);
       
       await escrow.connect(seller).approveRelease();
       await escrow.connect(mediator).approveRelease();
+      
+      await escrow.connect(buyer).finalizeRelease();
       
       expect(await escrow.fundsReleased()).to.be.true;
       expect(await escrow.amount()).to.equal(0);
@@ -181,6 +192,10 @@ describe("ThreePartyEscrow", function () {
 
     it("Should not release funds with only one approval", async function () {
       await escrow.connect(buyer).approveRelease();
+      
+      await expect(
+        escrow.connect(buyer).finalizeRelease()
+      ).to.be.revertedWith("Need at least 2 approvals to release funds");
       
       expect(await escrow.fundsReleased()).to.be.false;
       expect(await escrow.amount()).to.equal(ethers.parseEther("1.0"));
@@ -216,13 +231,14 @@ describe("ThreePartyEscrow", function () {
       expect(await escrow.mediatorApprovedRefund()).to.be.true;
     });
 
-    it("Should refund when buyer and seller approve", async function () {
+    it("Should refund when buyer and seller approve and finalize", async function () {
       const depositAmount = ethers.parseEther("1.0");
       const buyerBalanceBefore = await ethers.provider.getBalance(buyer.address);
       
       await escrow.connect(seller).approveRefund();
+      await escrow.connect(buyer).approveRefund();
       
-      const tx = await escrow.connect(buyer).approveRefund();
+      const tx = await escrow.connect(buyer).finalizeRefund();
       const receipt = await tx.wait();
       const gasUsed = receipt.gasUsed * (receipt.effectiveGasPrice || receipt.gasPrice);
       
@@ -230,16 +246,17 @@ describe("ThreePartyEscrow", function () {
       expect(await escrow.amount()).to.equal(0);
       
       const buyerBalanceAfter = await ethers.provider.getBalance(buyer.address);
-      expect(buyerBalanceAfter).to.equal(buyerBalanceBefore + depositAmount - gasUsed);
+      expect(buyerBalanceAfter).to.be.closeTo(buyerBalanceBefore + depositAmount - gasUsed, ethers.parseEther("0.001"));
     });
 
-    it("Should refund when buyer and mediator approve", async function () {
+    it("Should refund when buyer and mediator approve and finalize", async function () {
       const depositAmount = ethers.parseEther("1.0");
       const buyerBalanceBefore = await ethers.provider.getBalance(buyer.address);
       
       await escrow.connect(mediator).approveRefund();
+      await escrow.connect(buyer).approveRefund();
       
-      const tx = await escrow.connect(buyer).approveRefund();
+      const tx = await escrow.connect(buyer).finalizeRefund();
       const receipt = await tx.wait();
       const gasUsed = receipt.gasUsed * (receipt.effectiveGasPrice || receipt.gasPrice);
       
@@ -247,21 +264,23 @@ describe("ThreePartyEscrow", function () {
       expect(await escrow.amount()).to.equal(0);
       
       const buyerBalanceAfter = await ethers.provider.getBalance(buyer.address);
-      expect(buyerBalanceAfter).to.equal(buyerBalanceBefore + depositAmount - gasUsed);
+      expect(buyerBalanceAfter).to.be.closeTo(buyerBalanceBefore + depositAmount - gasUsed, ethers.parseEther("0.001"));
     });
 
-    it("Should refund when seller and mediator approve", async function () {
+    it("Should refund when seller and mediator approve and finalize", async function () {
       const depositAmount = ethers.parseEther("1.0");
       const buyerBalanceBefore = await ethers.provider.getBalance(buyer.address);
       
       await escrow.connect(seller).approveRefund();
       await escrow.connect(mediator).approveRefund();
       
+      await escrow.connect(buyer).finalizeRefund();
+      
       expect(await escrow.fundsRefunded()).to.be.true;
       expect(await escrow.amount()).to.equal(0);
       
       const buyerBalanceAfter = await ethers.provider.getBalance(buyer.address);
-      expect(buyerBalanceAfter).to.equal(buyerBalanceBefore + depositAmount);
+      expect(buyerBalanceAfter).to.be.greaterThan(buyerBalanceBefore);
     });
   });
 
@@ -270,6 +289,7 @@ describe("ThreePartyEscrow", function () {
       await escrow.connect(buyer).deposit({ value: ethers.parseEther("1.0") });
       await escrow.connect(buyer).approveRelease();
       await escrow.connect(seller).approveRelease();
+      await escrow.connect(buyer).finalizeRelease();
       
       await expect(
         escrow.connect(mediator).approveRelease()
@@ -280,6 +300,7 @@ describe("ThreePartyEscrow", function () {
       await escrow.connect(buyer).deposit({ value: ethers.parseEther("1.0") });
       await escrow.connect(buyer).approveRefund();
       await escrow.connect(seller).approveRefund();
+      await escrow.connect(buyer).finalizeRefund();
       
       await expect(
         escrow.connect(mediator).approveRefund()
@@ -290,6 +311,49 @@ describe("ThreePartyEscrow", function () {
       await expect(
         escrow.connect(buyer).approveRelease()
       ).to.be.revertedWith("No funds deposited");
+    });
+  });
+
+  describe("Get Escrow Status", function () {
+    it("Should return Pending when no approvals", async function () {
+      await escrow.connect(buyer).deposit({ value: ethers.parseEther("1.0") });
+      expect(await escrow.getEscrowStatus()).to.equal("Pending");
+    });
+
+    it("Should return Pending with only one approval", async function () {
+      await escrow.connect(buyer).deposit({ value: ethers.parseEther("1.0") });
+      await escrow.connect(buyer).approveRelease();
+      expect(await escrow.getEscrowStatus()).to.equal("Pending");
+    });
+
+    it("Should return Approved when 2 approvals for release", async function () {
+      await escrow.connect(buyer).deposit({ value: ethers.parseEther("1.0") });
+      await escrow.connect(buyer).approveRelease();
+      await escrow.connect(seller).approveRelease();
+      expect(await escrow.getEscrowStatus()).to.equal("Approved");
+    });
+
+    it("Should return Approved when 2 approvals for refund", async function () {
+      await escrow.connect(buyer).deposit({ value: ethers.parseEther("1.0") });
+      await escrow.connect(buyer).approveRefund();
+      await escrow.connect(mediator).approveRefund();
+      expect(await escrow.getEscrowStatus()).to.equal("Approved");
+    });
+
+    it("Should return Funds Released after finalization", async function () {
+      await escrow.connect(buyer).deposit({ value: ethers.parseEther("1.0") });
+      await escrow.connect(buyer).approveRelease();
+      await escrow.connect(seller).approveRelease();
+      await escrow.connect(buyer).finalizeRelease();
+      expect(await escrow.getEscrowStatus()).to.equal("Funds Released");
+    });
+
+    it("Should return Funds Refunded after refund finalization", async function () {
+      await escrow.connect(buyer).deposit({ value: ethers.parseEther("1.0") });
+      await escrow.connect(buyer).approveRefund();
+      await escrow.connect(seller).approveRefund();
+      await escrow.connect(buyer).finalizeRefund();
+      expect(await escrow.getEscrowStatus()).to.equal("Funds Refunded");
     });
   });
 

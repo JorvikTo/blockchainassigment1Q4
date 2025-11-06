@@ -22,7 +22,7 @@ async function main() {
   // Step 1: Deploy the contract
   console.log("Step 1: Deploying escrow contract...");
   const ThreePartyEscrow = await ethers.getContractFactory("ThreePartyEscrow");
-  const escrow = await ThreePartyEscrow.connect(buyer).deploy(seller.address, mediator.address);
+  const escrow = await ThreePartyEscrow.deploy(buyer.address, seller.address, mediator.address);
   await escrow.waitForDeployment();
   console.log("  Contract deployed at:", await escrow.getAddress());
   console.log();
@@ -34,6 +34,7 @@ async function main() {
   await depositTx.wait();
   console.log("  Deposited:", ethers.formatEther(depositAmount), "ETH");
   console.log("  Escrow balance:", ethers.formatEther(await ethers.provider.getBalance(await escrow.getAddress())), "ETH");
+  console.log("  Status:", await escrow.getEscrowStatus());
   console.log();
   
   // Check state
@@ -50,26 +51,34 @@ async function main() {
   const buyerApproveTx = await escrow.connect(buyer).approveRelease();
   await buyerApproveTx.wait();
   console.log("  Buyer approval recorded");
+  console.log("  Status:", await escrow.getEscrowStatus());
   
   state = await escrow.getEscrowState();
   console.log("  Buyer approved release:", state._buyerApprovedRelease);
   console.log("  Funds released:", state._fundsReleased);
   console.log();
   
-  // Step 4: Seller approves release (this triggers the release)
-  console.log("Step 4: Seller approves release (2nd approval - triggers release)...");
+  // Step 4: Seller approves release (2nd approval)
+  console.log("Step 4: Seller approves release (2nd approval)...");
+  const sellerApproveTx = await escrow.connect(seller).approveRelease();
+  await sellerApproveTx.wait();
+  console.log("  Seller approval recorded");
+  console.log("  Status:", await escrow.getEscrowStatus());
+  console.log();
+  
+  // Step 5: Finalize release
+  console.log("Step 5: Finalizing release to seller...");
   const sellerBalanceBefore = await ethers.provider.getBalance(seller.address);
   console.log("  Seller balance before:", ethers.formatEther(sellerBalanceBefore), "ETH");
   
-  const sellerApproveTx = await escrow.connect(seller).approveRelease();
-  const receipt = await sellerApproveTx.wait();
+  const finalizeTx = await escrow.connect(buyer).finalizeRelease();
+  await finalizeTx.wait();
   
   const sellerBalanceAfter = await ethers.provider.getBalance(seller.address);
-  const gasUsed = receipt.gasUsed * receipt.gasPrice;
   
   console.log("  Seller balance after:", ethers.formatEther(sellerBalanceAfter), "ETH");
-  console.log("  Gas used:", ethers.formatEther(gasUsed), "ETH");
-  console.log("  Net gain:", ethers.formatEther(sellerBalanceAfter - sellerBalanceBefore + gasUsed), "ETH");
+  console.log("  Net gain:", ethers.formatEther(sellerBalanceAfter - sellerBalanceBefore), "ETH");
+  console.log("  Status:", await escrow.getEscrowStatus());
   console.log();
   
   // Final state

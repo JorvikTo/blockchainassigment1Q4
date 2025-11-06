@@ -29,7 +29,7 @@ describe("ThreePartyEscrow", function () {
   });
 
   beforeEach(async function () {
-    escrow = await escrowFactory.deploy(seller.address, mediator.address);
+    escrow = await escrowFactory.deploy(buyer.address, seller.address, mediator.address);
     await escrow.waitForDeployment();
   });
 
