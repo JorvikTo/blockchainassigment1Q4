@@ -8,10 +8,10 @@ This document provides a quick reference for the Remix Solidity test suite.
 
 | File | Purpose | Test Count | Lines |
 |------|---------|------------|-------|
-| `ThreePartyEscrow_test.sol` | Unit tests for individual functions | ~25 | 209 |
-| `ThreePartyEscrow_system_test.sol` | System/integration tests for workflows | ~12 | 236 |
-| `ThreePartyEscrow_advanced_test.sol` | Advanced edge cases and boundary tests | ~13 | 218 |
-| **Total** | **Comprehensive test coverage** | **~50** | **663** |
+| `ThreePartyEscrow_test.sol` | Unit tests for individual functions | 20 | 209 |
+| `ThreePartyEscrow_system_test.sol` | System/integration tests for workflows | 10 | 236 |
+| `ThreePartyEscrow_advanced_test.sol` | Advanced edge cases and boundary tests | 12 | 218 |
+| **Total** | **Comprehensive test coverage** | **42** | **663** |
 
 ## Quick Start
 
