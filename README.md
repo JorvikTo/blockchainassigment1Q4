@@ -97,32 +97,51 @@ This compiles the Solidity contract using the solc compiler.
 
 ## Testing
 
-The repository includes comprehensive test coverage for:
+The repository includes comprehensive test coverage in two formats:
+
+### 1. JavaScript Tests (Hardhat)
+To run JavaScript tests with Hardhat:
+```bash
+npx hardhat test
+```
+
+### 2. Solidity Tests (Remix Framework)
+The repository includes Solidity-based tests using the Remix testing framework:
+- `test/ThreePartyEscrow_test.sol` - Unit tests
+- `test/ThreePartyEscrow_system_test.sol` - System/integration tests
+- `test/ThreePartyEscrow_advanced_test.sol` - Advanced edge case tests
+
+To run Remix tests, see [REMIX_TESTING.md](REMIX_TESTING.md) for detailed instructions.
+
+**Test Coverage:**
 - Contract deployment validation
 - Deposit functionality
 - 2-of-3 approval mechanism for releases
 - 2-of-3 approval mechanism for refunds
 - Edge cases and security checks
 - State management
-
-To run tests (requires local Hardhat network):
-```bash
-npx hardhat test
-```
+- Complete workflow scenarios
+- Multi-party interactions
 
 ## Project Structure
 
 ```
 .
 ├── contracts/
-│   └── ThreePartyEscrow.sol    # Main escrow contract
+│   └── ThreePartyEscrow.sol              # Main escrow contract
 ├── test/
-│   └── ThreePartyEscrow.test.js # Comprehensive test suite
+│   ├── ThreePartyEscrow.test.js          # Hardhat/JavaScript tests
+│   ├── ThreePartyEscrow.standalone.test.js
+│   ├── ThreePartyEscrow_test.sol         # Remix unit tests
+│   ├── ThreePartyEscrow_system_test.sol  # Remix system tests
+│   └── ThreePartyEscrow_advanced_test.sol # Remix advanced tests
 ├── scripts/
-│   └── compile.js               # Compilation script
-├── hardhat.config.js            # Hardhat configuration
+│   ├── compile.js                        # Compilation script
+│   └── verify.js                         # Verification script
+├── hardhat.config.js                     # Hardhat configuration
 ├── package.json
-└── README.md
+├── README.md
+└── REMIX_TESTING.md                      # Remix testing guide
 ```
 
 ## Security Considerations
