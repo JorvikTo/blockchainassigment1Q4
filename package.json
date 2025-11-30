@@ -5,6 +5,9 @@
   "main": "index.js",
   "scripts": {
     "test": "hardhat test",
+    "test:solidity": "hardhat run scripts/runSolidityTests.js",
+    "test:verify": "node scripts/verifySolidityTests.js",
+    "test:all": "npm run test && npm run test:solidity",
     "compile": "node scripts/compile.js",
     "verify": "node scripts/verify.js"
   },
