@@ -8,6 +8,9 @@
 import { readFileSync, existsSync } from 'fs';
 import { join } from 'path';
 
+// Configuration
+const COVERAGE_THRESHOLD = 75; // Minimum acceptable coverage percentage (75% = 6/8 areas)
+
 const testFiles = [
     'test/ThreePartyEscrow.t.sol',
     'test/ThreePartyEscrowTestRunner.sol'
@@ -203,7 +206,7 @@ console.log("Verification Complete");
 console.log("=".repeat(70));
 console.log();
 
-if (totalTests > 0 && coveragePercentage >= 75) {
+if (totalTests > 0 && coveragePercentage >= COVERAGE_THRESHOLD) {
     console.log("✅ Test suite verification PASSED");
     process.exit(0);
 } else {

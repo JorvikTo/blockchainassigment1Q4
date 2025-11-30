@@ -30,11 +30,11 @@ contract ThreePartyEscrowTest {
     event TestFailed(string testName, string reason);
     
     constructor() {
-        // Initialize test accounts
-        buyer = payable(address(0x1));
-        seller = payable(address(0x2));
-        mediator = payable(address(0x3));
-        unauthorized = payable(address(0x4));
+        // Initialize test accounts with deterministic addresses for better readability
+        buyer = payable(address(uint160(uint256(keccak256("test.buyer")))));
+        seller = payable(address(uint160(uint256(keccak256("test.seller")))));
+        mediator = payable(address(uint160(uint256(keccak256("test.mediator")))));
+        unauthorized = payable(address(uint160(uint256(keccak256("test.unauthorized")))));
     }
     
     /**
